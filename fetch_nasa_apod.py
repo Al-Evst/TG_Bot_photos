@@ -20,7 +20,7 @@ def fetch_nasa_apod(api_key: str, count: int, dir_save: str):
             download_image(image_url, image_name)
             print(f"Downloaded: {image_name}")
         else:
-            print(f"Skipping non-image content: {image_data.get('media_type')} - {image_data.get('url')}")
+            print(f"Не относится к фото: {image_data.get('media_type')} - {image_data.get('url')}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
