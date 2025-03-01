@@ -4,18 +4,18 @@ from urllib.parse import urlparse
 import argparse
 from utils import download_image
 
-def fetch_spacex_images(launch_id: str = "latest", save_dir: str = "images"):
+def fetch_spacex_images(launch_id: str = "latest", dir_save: str = "images"):
     
     url = f"https://api.spacexdata.com/v5/launches/{launch_id}"
     response = requests.get(url)
     response.raise_for_status()
     data = response.json()
     photos = data.get('links', {}).get('flickr', {}).get('original', [])
-    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(dir_save, exist_ok=True)
     for i, photo in enumerate(photos, start=1):
         filename = f"spacex_{i}.jpg"
-        save_path = os.path.join(save_dir, filename)
-        download_image(photo, save_path)
+        path_save = os.path.join(dir_save, filename)
+        download_image(photo, path_save)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
