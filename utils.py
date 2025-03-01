@@ -9,13 +9,12 @@ def get_image_extension(url: str) -> str:
     _, ext = os.path.splitext(filename)
     return ext if ext else ".jpg"
 
-def download_image(url, save_path):
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+def download_image(url, path_save):
+    os.makedirs(os.path.dirname(path_save), exist_ok=True)
     response = requests.get(url)
     response.raise_for_status()
-    with open(save_path, 'wb') as file:
+    with open(path_save, 'wb') as file:
         file.write(response.content)
-    print(f"Файл сохранен в: {save_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Скачивание изображения по ссылке")
