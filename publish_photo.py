@@ -1,54 +1,58 @@
 import os
 import random
 import argparse
-from telegram import Bot
+import sys
+from telegram import Bot, error
 from dotenv import load_dotenv
+from utils import get_photos, publish_photo  
 
-def get_photos(photo_dir):
-    if not os.path.exists(photo_dir):
-        return []
-    
-    try:
-        photos = [os.path.join(photo_dir, f) for f in os.listdir(photo_dir) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
-    except OSError:
-        return []
-    
-    return photos
+def main():
+    load_dotenv()  
 
-def publish_photo(bot_token, chat_id, photo_dir, photo_path=None):
-    try:
-        bot = Bot(token=bot_token)
-    except Exception:
-        return
-    
-    photos = get_photos(photo_dir)
-    if not photos:
-        return
-    
-    if not photo_path:
-        photo_path = random.choice(photos)
-    
-    try:
-        with open(photo_path, 'rb') as photo:
-            try:
-                bot.send_photo(chat_id=chat_id, photo=photo)
-            except Exception:
-                pass
-    except (FileNotFoundError, IOError):
-        pass
+    BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+    CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+    PHOTO_DIR = os.getenv("PHOTO_DIR", "images")
 
-if __name__ == "__main__":
-    load_dotenv()
-    
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    photo_dir = os.getenv("PHOTO_DIR", "images")  
+    if not BOT_TOKEN or not CHAT_ID:
+        print("Ошибка: Отсутствует токен бота или ID канала в переменных окружения.", file=sys.stderr)
+        sys.exit(1)
 
-    if not bot_token or not chat_id:
-        raise ValueError("Отсутствует токен бота или ID канала в переменных окружения.")
-    
+    bot = Bot(token=BOT_TOKEN)
+
+    def publish_random_photo(photo_path=None):
+        photos = get_photos(PHOTO_DIR)
+        if not photos:
+            return None
+
+        if not photo_path:
+            photo_path = random.choice(photos)
+
+        return photo_path
+
     parser = argparse.ArgumentParser(description="Публикация фото в Telegram-канал")
     parser.add_argument("--photo", type=str, help="Путь к фото для публикации")
     args = parser.parse_args()
-    
-    publish_photo(bot_token, chat_id, photo_dir, args.photo)
+
+    try:
+        photo_path = publish_random_photo(args.photo)
+        if not photo_path:
+            print("Ошибка: Нет фото для публикации.", file=sys.stderr)
+            return
+
+        publish_photo(bot, CHAT_ID, photo_path)  
+
+    except FileNotFoundError:
+        print(f"Ошибка: Файл {photo_path} не найден.", file=sys.stderr)
+        sys.exit(2)
+    except PermissionError:
+        print(f"Ошибка: Ошибка доступа к файлу {photo_path}. Проверьте права доступа.", file=sys.stderr)
+        sys.exit(3)
+    except error.NetworkError:
+        print(f"Ошибка: Ошибка сети при отправке фото.", file=sys.stderr)
+        sys.exit(4)
+    except error.Unauthorized:
+        print("Ошибка: Неавторизованный доступ к Telegram API. Проверьте токен.", file=sys.stderr)
+        sys.exit(5)
+
+if __name__ == "__main__":
+    main()
