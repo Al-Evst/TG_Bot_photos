@@ -4,22 +4,22 @@ from datetime import datetime
 import argparse
 from utils import download_image
 
-def fetch_nasa_epic(api_key: str, count: int, dir_save: str):
+def fetch_nasa_epic(api_key: str, count: int, output_path: str):
     
     url = "https://api.nasa.gov/EPIC/api/natural/images"
     params = {"api_key": api_key}
     response = requests.get(url, params=params)
     response.raise_for_status()
     images = response.json()[:count]
-    os.makedirs(dir_save, exist_ok=True)
+    os.makedirs(output_path, exist_ok=True)
     for image_data in images:
         image_name = image_data["image"]
         date_str = image_data["date"]
         date_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
         date_path = date_obj.strftime("%Y/%m/%d")
         image_url = f"https://epic.gsfc.nasa.gov/archive/natural/{date_path}/png/{image_name}.png"
-        path_save= os.path.join(dir_save, f"{image_name}.png")
-        download_image(image_url, path_save)
+        file_path= os.path.join(output_path, f"{image_name}.png")
+        download_image(image_url, file_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
