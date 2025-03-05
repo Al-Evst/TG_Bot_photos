@@ -16,7 +16,10 @@ request==2.32.3;
 ```
 pip install "Библиотека"
 ```
-
+Так же можно установить файл ```requirements.txt```, содержащие список элементов, которые необходимо установить :
+```
+python -m pip install -r requirements.txt
+```
 ### Пример: ###
 
 ```pip install python-telegram-bot```
