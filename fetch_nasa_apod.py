@@ -4,23 +4,23 @@ import argparse
 from urllib.parse import urlparse
 from utils import get_image_extension, download_image 
 
-def fetch_nasa_apod(api_key: str, count: int, dir_save: str):
+def fetch_nasa_apod(api_key: str, count: int, output_path: str):
     url = "https://api.nasa.gov/planetary/apod"
     params = {"api_key": api_key, "count": count}
     response = requests.get(url, params=params)
     response.raise_for_status()
     images = response.json()
-    os.makedirs(dir_save, exist_ok=True)
+    os.makedirs(output_path, exist_ok=True)
     
     for i, image_data in enumerate(images):
         if image_data.get("media_type") == "image": 
             image_url = image_data.get("hdurl") or image_data.get("url")
             ext = get_image_extension(image_url)
-            image_name = os.path.join(dir_save, f"nasa_apod_{i}{ext}")
+            image_name = os.path.join(output_path, f"nasa_apod_{i}{ext}")
             download_image(image_url, image_name)
             print(f"Downloaded: {image_name}")
         else:
-            print(f"Не относится к фото: {image_data.get('media_type')} - {image_data.get('url')}")
+            print(f"Skipping non-image content: {image_data.get('media_type')} - {image_data.get('url')}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
