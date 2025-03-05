@@ -12,13 +12,13 @@ def get_image_extension(url: str) -> str:
     _, ext = os.path.splitext(filename)
     return ext if ext else ".jpg"
 
-def download_image(url: str, save_path: str):
+def download_image(url: str, file_path: str):
     
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    os.makedirs(os.path.dirname( file_path), exist_ok=True)
     response = requests.get(url)
     response.raise_for_status()
     
-    with open(save_path, 'wb') as file:
+    with open( file_path, 'wb') as file:
         file.write(response.content)
 
 def get_photos(photo_dir: str):
