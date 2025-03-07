@@ -2,56 +2,60 @@ import os
 import random
 import argparse
 import sys
+import logging
 from telegram import Bot, error
 from dotenv import load_dotenv
-from utils import get_photos, publish_photo  
+from functools import partial
+from test_util import get_photos, publish_photo  
+
+def publish_random_photo(photo_dir, photo_path=None):
+    photos = get_photos(photo_dir)
+    if not photos:
+        return None
+    return photo_path if photo_path else random.choice(photos)
 
 def main():
-    load_dotenv()  
+    
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logger = logging.getLogger()
 
-    BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-    CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-    PHOTO_DIR = os.getenv("PHOTO_DIR", "images")
-
-    if not BOT_TOKEN or not CHAT_ID:
-        print("Ошибка: Отсутствует токен бота или ID канала в переменных окружения.", file=sys.stderr)
+    load_dotenv()
+    
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    photo_dir = os.getenv("PHOTO_DIR", "images")
+    
+    if not bot_token or not chat_id:
+        logger.error("Отсутствует токен бота или ID канала в переменных окружения.")
         sys.exit(1)
-
-    bot = Bot(token=BOT_TOKEN)
-
-    def publish_random_photo(photo_path=None):
-        photos = get_photos(PHOTO_DIR)
-        if not photos:
-            return None
-
-        if not photo_path:
-            photo_path = random.choice(photos)
-
-        return photo_path
-
+    
+    bot = Bot(token=bot_token)
+    
     parser = argparse.ArgumentParser(description="Публикация фото в Telegram-канал")
     parser.add_argument("--photo", type=str, help="Путь к фото для публикации")
     args = parser.parse_args()
-
+    
     try:
-        photo_path = publish_random_photo(args.photo)
+        photo_selector = partial(publish_random_photo, photo_dir)
+        photo_path = photo_selector(args.photo)
+        
         if not photo_path:
-            print("Ошибка: Нет фото для публикации.", file=sys.stderr)
+            logger.error("Нет фото для публикации.")
             return
-
-        publish_photo(bot, CHAT_ID, photo_path)  
-
+        
+        publish_photo(bot, chat_id, photo_path)  
+    
     except FileNotFoundError:
-        print(f"Ошибка: Файл {photo_path} не найден.", file=sys.stderr)
+        logger.error(f"Файл {photo_path} не найден.")
         sys.exit(2)
     except PermissionError:
-        print(f"Ошибка: Ошибка доступа к файлу {photo_path}. Проверьте права доступа.", file=sys.stderr)
+        logger.error(f"Ошибка доступа к файлу {photo_path}. Проверьте права доступа.")
         sys.exit(3)
     except error.NetworkError:
-        print(f"Ошибка: Ошибка сети при отправке фото.", file=sys.stderr)
+        logger.error("Ошибка сети при отправке фото.")
         sys.exit(4)
     except error.Unauthorized:
-        print("Ошибка: Неавторизованный доступ к Telegram API. Проверьте токен.", file=sys.stderr)
+        logger.error("Неавторизованный доступ к Telegram API. Проверьте токен.")
         sys.exit(5)
 
 if __name__ == "__main__":
