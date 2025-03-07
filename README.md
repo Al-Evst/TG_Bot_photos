@@ -10,10 +10,6 @@
 python -m pip install -r requirements.txt
 ```
 
-### Пример: ###
-
-```pip install python-telegram-bot```
-
 ## Настройка ##
 
 1. Создать бота Telegram
