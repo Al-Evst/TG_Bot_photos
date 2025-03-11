@@ -5,8 +5,7 @@ import sys
 import logging
 from telegram import Bot, error
 from dotenv import load_dotenv
-from functools import partial
-from test_util import get_photos, publish_photo  
+from utils import get_photos, publish_photo  
 
 def publish_random_photo(photo_dir, photo_path=None):
     photos = get_photos(photo_dir)
@@ -36,8 +35,7 @@ def main():
     args = parser.parse_args()
     
     try:
-        photo_selector = partial(publish_random_photo, photo_dir)
-        photo_path = photo_selector(args.photo)
+        photo_path = publish_random_photo(photo_dir, args.photo)
         
         if not photo_path:
             logger.error("Нет фото для публикации.")
