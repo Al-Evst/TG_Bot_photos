@@ -1,12 +1,9 @@
 import os
 import requests
 import argparse
-import random
-import sys
 import logging
 from urllib.parse import urlparse
 from telegram import Bot, error
-
 
 def get_image_extension(url: str) -> str:
     parsed_url = urlparse(url)
@@ -24,15 +21,13 @@ def download_image(url: str, file_path: str):
 
 def get_photos(photo_dir: str):
     if not os.path.exists(photo_dir):
-        logging.error(f"Ошибка: Директория {photo_dir} не существует.")
-        sys.exit(1)
+        raise FileNotFoundError(f"Ошибка: Директория {photo_dir} не существует.")
     
     photos = [os.path.join(photo_dir, f) for f in os.listdir(photo_dir) 
               if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     
     if not photos:
-        logging.error("Ошибка: Нет доступных фото для публикации.")
-        sys.exit(1)
+        raise ValueError("Ошибка: Нет доступных фото для публикации.")
 
     return photos
 
@@ -44,15 +39,12 @@ def publish_photo(bot: Bot, chat_id: str, photo_path: str):
 def try_publish_photo(bot: Bot, chat_id: str, photo_path: str):
     try:
         publish_photo(bot, chat_id, photo_path)
-    except FileNotFoundError:
-        logging.error(f"Ошибка: Файл {photo_path} не найден.")
-        sys.exit(1)
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Ошибка: Файл {photo_path} не найден.") from e
     except error.TelegramError as e:
-        logging.error(f"Ошибка Telegram API при отправке фото: {e}")
-        sys.exit(1)
+        raise RuntimeError(f"Ошибка Telegram API при отправке фото: {e}") from e
     except OSError as e:
-        logging.error(f"Ошибка при работе с файлом {photo_path}: {e}")
-        sys.exit(1)
+        raise OSError(f"Ошибка при работе с файлом {photo_path}: {e}") from e
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -73,4 +65,3 @@ if __name__ == "__main__":
         logging.info(f"Изображение успешно загружено по пути {args.output}")
     except requests.RequestException as e:
         logging.error(f"Ошибка при скачивании изображения: {e}")
-        sys.exit(1)
