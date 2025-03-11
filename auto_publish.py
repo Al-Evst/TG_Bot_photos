@@ -4,12 +4,36 @@ import argparse
 import logging
 from telegram import Bot, error
 from dotenv import load_dotenv
-from test_util import get_photos, publish_photo
+from utils import get_photos, publish_photo
+
+def publish_all_photos(bot, chat_id, photo_dir, interval, max_attempts=5, retry_delay=10):
+    photos = get_photos(photo_dir)
+    if not photos:
+        raise ValueError("Нет доступных фото для публикации.")
+       
+
+    for photo in photos:
+        attempts = 0
+        while attempts < max_attempts:
+            try:
+                publish_photo(bot, chat_id, photo)
+                logging.info(f"Фото {photo} отправлено. Следующая публикация через {interval / 3600} часов.")
+                time.sleep(interval)
+                break
+            except FileNotFoundError:
+                logging.error(f"Файл {photo} не найден, пропускаем.")
+                break
+            except (error.TelegramError, error.NetworkError, OSError) as e:
+                logging.error(f"Ошибка при отправке {photo}: {e}")
+                attempts += 1
+                if attempts < max_attempts:
+                    logging.info(f"Попытка {attempts} из {max_attempts}. Повтор через {retry_delay} секунд...")
+                    time.sleep(retry_delay)
+        else:
+            logging.error(f"Не удалось отправить {photo} после {max_attempts} попыток.")
 
 def main():
     load_dotenv()
-
-    time_to_sleep  = 10
 
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -29,46 +53,7 @@ def main():
     args = parser.parse_args()
 
     logging.info(f"Автоматическая публикация фотографий запущена... Интервал: {args.interval / 3600} часов.")
-
-    while True:
-        photos = get_photos(args.photo_dir)
-        if not photos:
-            logging.error("Нет доступных фото для публикации. Скрипт завершает работу.")
-            break
-        
-        for photo in photos:
-            attempts = 0
-            success = False
-
-            while attempts < 5 and not success:  
-                try:
-                    publish_photo(bot, chat_id, photo)
-                    logging.info(f"Следующая публикация через {args.interval / 3600} часов...")
-                    success = True
-                    time.sleep(args.interval)
-                except FileNotFoundError:
-                    logging.error(f"Ошибка: Файл {photo} не найден.")
-                    success = True
-                    break  
-                except error.TelegramError as e:
-                    logging.error(f"Ошибка Telegram API при отправке фото: {e}")
-                      
-                except error.NetworkError as e:
-                    logging.error(f"Сетевая ошибка при отправке фото: {e}")
-                      
-                except OSError as e:
-                    logging.error(f"Ошибка при работе с файлом {photo}: {e}")  
-                    break
-                
-                finally:
-                    attempts += 1
-                    if attempts < 5:
-                        logging.info(f"Попытка {attempts} из 5. Повторная попытка через {time_to_sleep} секунд...")
-                        time.sleep(time_to_sleep)
-            
-            if not success:
-                logging.error(f"Не удалось отправить фото {photo} после 5 попыток. Переходим к следующему.")
-                
+    publish_all_photos(bot, chat_id, args.photo_dir, args.interval)
 
 if __name__ == "__main__":
     main()
