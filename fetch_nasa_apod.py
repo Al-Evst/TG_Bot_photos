@@ -1,7 +1,6 @@
 import os
 import requests
 import argparse
-from urllib.parse import urlparse
 from utils import get_image_extension, download_image 
 
 def fetch_nasa_apod(api_key: str, count: int, output_path: str):
