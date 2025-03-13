@@ -1,6 +1,5 @@
 import os
 import requests
-from urllib.parse import urlparse
 import argparse
 from utils import download_image
 
