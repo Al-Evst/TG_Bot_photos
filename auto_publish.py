@@ -7,30 +7,30 @@ from dotenv import load_dotenv
 from utils import get_photos, publish_photo
 
 def publish_all_photos(bot, chat_id, photo_dir, interval, max_attempts=5, retry_delay=10):
-    photos = get_photos(photo_dir)
-    if not photos:
-        raise ValueError("Нет доступных фото для публикации.")
-       
+    while True:  
+        photos = get_photos(photo_dir)
+        if not photos:
+            logging.warning("Нет доступных фото для публикации. Ожидание новых фотографий...")
+            time.sleep(interval)  
+            continue
 
-    for photo in photos:
-        attempts = 0
-        while attempts < max_attempts:
-            try:
-                publish_photo(bot, chat_id, photo)
-                logging.info(f"Фото {photo} отправлено. Следующая публикация через {interval / 3600} часов.")
-                time.sleep(interval)
-                break
-            except FileNotFoundError:
-                logging.error(f"Файл {photo} не найден, пропускаем.")
-                break
-            except (error.TelegramError, error.NetworkError, OSError) as e:
-                logging.error(f"Ошибка при отправке {photo}: {e}")
-                attempts += 1
-                if attempts < max_attempts:
-                    logging.info(f"Попытка {attempts} из {max_attempts}. Повтор через {retry_delay} секунд...")
-                    time.sleep(retry_delay)
-        else:
-            logging.error(f"Не удалось отправить {photo} после {max_attempts} попыток.")
+        for photo in photos:
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    publish_photo(bot, chat_id, photo)
+                    logging.info(f"Фото {photo} отправлено. Следующая публикация через {interval / 3600} часов.")
+                    time.sleep(interval)  
+                    break
+                except FileNotFoundError:
+                    logging.error(f"Файл {photo} не найден, пропускаем.")
+                    break
+                except (error.TelegramError, error.NetworkError, OSError) as e:
+                    logging.error(f"Ошибка при отправке {photo}: {e}")
+                    if attempt < max_attempts:
+                        logging.info(f"Попытка {attempt} из {max_attempts}. Повтор через {retry_delay} секунд...")
+                        time.sleep(retry_delay)
+                    else:
+                        logging.error(f"Не удалось отправить {photo} после {max_attempts} попыток.")
 
 def main():
     load_dotenv()
