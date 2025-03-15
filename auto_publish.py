@@ -6,7 +6,7 @@ from telegram import Bot, error
 from dotenv import load_dotenv
 from utils import get_photos, publish_photo
 
-def check_photos_in_folder(photo_dir):
+def check_photo_in_folder(photo_dir):
     photos = get_photos(photo_dir)
     if not photos:
         logging.error("Нет доступных фото для публикации. Завершаем работу.")
@@ -53,7 +53,7 @@ def main():
     args = parser.parse_args()
 
     logging.info(f"Автоматическая публикация фотографий запущена... Интервал: {args.interval / 3600} часов.")
-    photos = check_photos_in_folder(args.photo_dir)
+    photos = check_photo_in_folder(args.photo_dir)
     publish_photos(bot, chat_id, photos, args.interval)
 
 if __name__ == "__main__":
