@@ -6,6 +6,7 @@ from telegram import Bot, error
 from dotenv import load_dotenv
 from utils import get_photos, publish_photo
 
+
 def check_photo_in_folder(photo_dir):
     photos = get_photos(photo_dir)
     if not photos:
